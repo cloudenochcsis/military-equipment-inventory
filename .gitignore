@@ -68,7 +68,6 @@ dump.rdb
 .env.production.local
 
 # Project specific
-.windsurfrules
 
 # Testing
 .coverage
