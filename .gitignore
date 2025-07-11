@@ -67,6 +67,9 @@ dump.rdb
 .env.test.local
 .env.production.local
 
+# Project specific
+.windsurfrules
+
 # Testing
 .coverage
 htmlcov/
