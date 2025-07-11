@@ -1,0 +1,393 @@
+from fastapi import FastAPI, Depends, HTTPException, Query, Path, Request, Response, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
+from typing import List, Optional, Dict, Any
+import time
+import logging
+from datetime import date
+
+import models
+import schemas
+import crud
+import db_utils
+from db_utils import convert_equipment_db_to_schema
+from database import get_db, engine
+from cache import cache_response, CACHE_TTL
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
+
+# Create tables if they don't exist (in development)
+# In production, use Alembic migrations
+# models.Base.metadata.create_all(bind=engine)
+
+tags_metadata = [
+    {
+        "name": "Equipment",
+        "description": "Operations with equipment items.",
+    },
+    {
+        "name": "Maintenance",
+        "description": "Manage maintenance logs.",
+    },
+    {
+        "name": "Units",
+        "description": "Operations with military units.",
+    },
+    {
+        "name": "Health",
+        "description": "Health check endpoint.",
+    },
+]
+
+app = FastAPI(
+    title="Military Equipment Inventory API",
+    description="API for managing military equipment inventory",
+    version="1.0.0",
+    openapi_tags=tags_metadata,
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Restrict in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Request logging middleware
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+    
+    # Get client IP and request details
+    client_ip = request.client.host if request.client else "unknown"
+    request_id = request.headers.get("X-Request-ID", "")
+    
+    logger.info(f"Request started: {request.method} {request.url.path} - Client: {client_ip} - ID: {request_id}")
+    
+    # Process request
+    try:
+        response = await call_next(request)
+        process_time = time.time() - start_time
+        
+        # Log response details
+        logger.info(
+            f"Request completed: {request.method} {request.url.path} - Status: {response.status_code} - "
+            f"Processing time: {process_time:.3f}s - ID: {request_id}"
+        )
+        
+        # Add processing time header
+        response.headers["X-Process-Time"] = str(process_time)
+        return response
+        
+    except Exception as e:
+        # Log exceptions
+        process_time = time.time() - start_time
+        logger.error(
+            f"Request failed: {request.method} {request.url.path} - Error: {str(e)} - "
+            f"Processing time: {process_time:.3f}s - ID: {request_id}"
+        )
+        
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "Internal server error"},
+        )
+
+# Health check endpoint
+@app.get("/health", tags=["Health"])
+def health_check():
+    return {"status": "healthy"}
+
+# Equipment endpoints
+@app.post("/equipment", response_model=schemas.EquipmentRead, status_code=201, tags=["Equipment"])
+def create_equipment(
+    equipment: schemas.EquipmentCreate, 
+    db: Session = Depends(get_db)
+):
+    # Check if equipment with same serial number already exists
+    if equipment.serial_number:
+        existing_equipment = db.query(models.Equipment).filter(
+            models.Equipment.serial_number == equipment.serial_number
+        ).first()
+        if existing_equipment:
+            raise HTTPException(status_code=400, detail="Equipment with this serial number already exists")
+    
+    try:
+        return crud.create_equipment(db=db, equipment=equipment)
+    except Exception as e:
+        logger.error(f"Error creating equipment: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create equipment")
+
+@app.get("/equipment", response_model=schemas.PaginatedResponse, tags=["Equipment"])
+@cache_response(expire_seconds=CACHE_TTL["equipment_list"], key_prefix="equipment_list")
+async def read_equipment(
+    request: Request,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=100),
+    status: Optional[str] = Query(None),
+    category: Optional[str] = Query(None),
+    classification: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    try:
+        # Get equipment with filters and enum conversion
+        equipment_list = db_utils.get_equipment_list_with_enum_conversion(
+            db=db, 
+            skip=skip, 
+            limit=limit, 
+            status=status, 
+            category=category,
+            classification=classification
+        )
+        
+        # Get total count for pagination
+        total_count = crud.get_equipment_count(
+            db=db,
+            status=status, 
+            category=category,
+            classification=classification
+        )
+        
+        return {
+            "total": total_count,
+            "page": skip // limit + 1,
+            "page_size": limit,
+            "data": equipment_list
+        }
+        
+    except Exception as e:
+        logger.error(f"Error listing equipment: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to list equipment")
+
+# IMPORTANT: Specific routes must come before parameterized routes to avoid conflicts
+@app.get("/equipment/stats", response_model=schemas.InventoryStats, tags=["Equipment"])
+@cache_response(expire_seconds=CACHE_TTL["statistics"], key_prefix="statistics")
+async def get_inventory_stats(request: Request, db: Session = Depends(get_db)):
+    try:
+        stats = crud.get_inventory_statistics(db=db)
+        return stats
+    except Exception as e:
+        logger.error(f"Error getting inventory stats: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get inventory stats")
+
+@app.get("/equipment/search", response_model=List[schemas.EquipmentRead], tags=["Equipment"])
+@cache_response(expire_seconds=CACHE_TTL["search_results"], key_prefix="search_results")
+async def search_equipment(
+    request: Request,
+    query: str = Query(..., min_length=1),
+    db: Session = Depends(get_db)
+):
+    try:
+        results = crud.search_equipment(db=db, query=query)
+        return [convert_equipment_db_to_schema(r) for r in results]
+    except Exception as e:
+        logger.error(f"Error searching equipment: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to search equipment")
+
+@app.get("/equipment/maintenance", tags=["Maintenance"])
+@cache_response(expire_seconds=CACHE_TTL["maintenance_schedule"], key_prefix="maintenance_schedule")
+async def get_maintenance_schedule(request: Request, db: Session = Depends(get_db)):
+    try:
+        overdue, due_soon = crud.get_maintenance_schedule(db=db)
+        # Use the new utility function to convert ORM objects to schema-compatible dicts
+        overdue_converted = db_utils.convert_equipment_objects_to_schema(overdue)
+        due_soon_converted = db_utils.convert_equipment_objects_to_schema(due_soon)
+        # Combine the converted lists but wrap in a paginated response format
+        combined_data = overdue_converted + due_soon_converted
+        return {
+            "data": combined_data,
+            "total": len(combined_data),
+            "page": 1,
+            "size": len(combined_data),
+            "pages": 1
+        }
+    except Exception as e:
+        logger.error(f"Error getting maintenance schedule: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get maintenance schedule")
+
+@app.get("/equipment/{equipment_id}", response_model=schemas.EquipmentRead, tags=["Equipment"])
+@cache_response(expire_seconds=CACHE_TTL["equipment_detail"], key_prefix="equipment_detail")
+async def read_equipment_by_id(
+    request: Request,
+    equipment_id: int = Path(..., gt=0),
+    db: Session = Depends(get_db)
+):
+    try:
+        db_equipment = db_utils.get_equipment_with_enum_conversion(db=db, equipment_id=equipment_id)
+        if db_equipment is None:
+            raise HTTPException(status_code=404, detail="Equipment not found")
+        return db_equipment
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving equipment {equipment_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve equipment")
+
+@app.put("/equipment/{equipment_id}", response_model=schemas.EquipmentRead, tags=["Equipment"])
+def update_equipment(
+    equipment_id: int,
+    equipment: schemas.EquipmentUpdate,
+    db: Session = Depends(get_db)
+):
+    try:
+        db_equipment = crud.update_equipment(db=db, equipment_id=equipment_id, equipment=equipment)
+        if db_equipment is None:
+            raise HTTPException(status_code=404, detail="Equipment not found")
+        return db_equipment
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating equipment {equipment_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to update equipment")
+
+@app.delete("/equipment/{equipment_id}", status_code=204, tags=["Equipment"])
+def delete_equipment(
+    equipment_id: int,
+    db: Session = Depends(get_db)
+):
+    try:
+        success = crud.delete_equipment(db=db, equipment_id=equipment_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Equipment not found")
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting equipment {equipment_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to delete equipment")
+
+@app.get("/equipment/search", response_model=List[schemas.EquipmentRead], tags=["Equipment"])
+@cache_response(expire_seconds=CACHE_TTL["search_results"], key_prefix="search_results")
+async def search_equipment(
+    request: Request,
+    query: str = Query(..., min_length=1),
+    db: Session = Depends(get_db)
+):
+    try:
+        results = crud.search_equipment(db=db, query=query)
+        return [convert_equipment_db_to_schema(r) for r in results]
+    except Exception as e:
+        logger.error(f"Error searching equipment: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to search equipment")
+
+@app.get("/equipment/stats", response_model=schemas.InventoryStats, tags=["Equipment"])
+@cache_response(expire_seconds=CACHE_TTL["statistics"], key_prefix="statistics")
+async def get_inventory_stats(request: Request, db: Session = Depends(get_db)):
+    try:
+        stats = crud.get_inventory_statistics(db=db)
+        return stats
+    except Exception as e:
+        logger.error(f"Error getting inventory stats: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get inventory stats")
+
+@app.get("/equipment/maintenance", tags=["Maintenance"])
+@cache_response(expire_seconds=CACHE_TTL["maintenance_schedule"], key_prefix="maintenance_schedule")
+async def get_maintenance_schedule(request: Request, db: Session = Depends(get_db)):
+    try:
+        overdue, due_soon = crud.get_maintenance_schedule(db=db)
+        # Use the new utility function to convert ORM objects to schema-compatible dicts
+        overdue_converted = db_utils.convert_equipment_objects_to_schema(overdue)
+        due_soon_converted = db_utils.convert_equipment_objects_to_schema(due_soon)
+        # Combine the converted lists but wrap in a paginated response format
+        combined_data = overdue_converted + due_soon_converted
+        return {
+            "data": combined_data,
+            "total": len(combined_data),
+            "page": 1,
+            "size": len(combined_data),
+            "pages": 1
+        }
+    except Exception as e:
+        logger.error(f"Error getting maintenance schedule: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get maintenance schedule")
+
+@app.get("/units", response_model=List[str], tags=["Units"])
+@cache_response(expire_seconds=CACHE_TTL["equipment_list"], key_prefix="unit_list")
+async def get_all_units(request: Request, db: Session = Depends(get_db)):
+    try:
+        units = crud.get_distinct_units(db=db)
+        return units
+    except Exception as e:
+        logger.error(f"Error retrieving units: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve units")
+
+
+@app.get("/equipment/unit/{unit_id}", response_model=List[schemas.EquipmentRead], tags=["Equipment"])
+@cache_response(expire_seconds=CACHE_TTL["equipment_list"], key_prefix="equipment_unit")
+async def get_equipment_by_unit(
+    request: Request,
+    unit_id: str = Path(...),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=100),
+    db: Session = Depends(get_db)
+):
+    try:
+        equipment_list = crud.get_equipment_by_unit(db=db, unit_id=unit_id, skip=skip, limit=limit)
+        # Convert ORM objects to schema-compatible dictionaries with proper enum handling
+        converted_equipment = db_utils.convert_equipment_objects_to_schema(equipment_list)
+        return converted_equipment
+    except Exception as e:
+        logger.error(f"Error retrieving equipment for unit {unit_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve equipment for unit")
+
+@app.post("/equipment/{equipment_id}/assign", response_model=schemas.EquipmentRead, tags=["Equipment"])
+def assign_equipment(
+    equipment_id: int,
+    assignment: schemas.EquipmentAssignment,
+    db: Session = Depends(get_db)
+):
+    try:
+        db_equipment = crud.assign_equipment(db=db, equipment_id=equipment_id, assignment=assignment)
+        if db_equipment is None:
+            raise HTTPException(status_code=404, detail="Equipment not found")
+        return db_equipment
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error assigning equipment {equipment_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to assign equipment")
+
+# Maintenance log endpoints
+@app.post("/maintenance", response_model=schemas.MaintenanceLogRead, status_code=201, tags=["Maintenance"])
+def create_maintenance_log(
+    log: schemas.MaintenanceLogCreate,
+    db: Session = Depends(get_db)
+):
+    # Check if equipment exists
+    equipment = crud.get_equipment(db=db, equipment_id=log.equipment_id)
+    if equipment is None:
+        raise HTTPException(status_code=404, detail="Equipment not found")
+    
+    try:
+        return crud.create_maintenance_log(db=db, log=log)
+    except Exception as e:
+        logger.error(f"Error creating maintenance log: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create maintenance log")
+
+@app.get("/maintenance/{equipment_id}", response_model=List[schemas.MaintenanceLogRead], tags=["Maintenance"])
+def get_maintenance_logs(
+    equipment_id: int,
+    db: Session = Depends(get_db)
+):
+    # Check if equipment exists
+    equipment = crud.get_equipment(db=db, equipment_id=equipment_id)
+    if equipment is None:
+        raise HTTPException(status_code=404, detail="Equipment not found")
+    
+    try:
+        return crud.get_maintenance_logs(db=db, equipment_id=equipment_id)
+    except Exception as e:
+        logger.error(f"Error retrieving maintenance logs: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve maintenance logs")
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8001)

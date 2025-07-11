@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Military Equipment Inventory{% endblock %}</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome for military icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Google Fonts - Roboto Mono for data displays, Oswald for headers -->
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600&family=Roboto+Mono&display=swap" rel="stylesheet">
+    <!-- Chart.js for statistics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            /* Military theme colors */
+            --military-green: #4A5D23;
+            --military-olive: #6B8E23;
+            --military-accent: #FF6B35;
+            --dark-bg: #1E2527;
+            --darker-bg: #141A1C;
+            --status-operational: #58A65C;
+            --status-maintenance: #FFC107;
+            --status-damaged: #FF6B35;
+            --status-decommissioned: #DC3545;
+        }
+        
+        body {
+            background-color: var(--dark-bg);
+            color: #E0E0E0;
+            font-family: 'Roboto Mono', monospace;
+            background-image: url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
+        }
+        
+        /* Header styles */
+        .navbar {
+            background-color: var(--darker-bg) !important;
+            border-bottom: 2px solid var(--military-green);
+        }
+        
+        .navbar-brand {
+            font-family: 'Oswald', sans-serif;
+            font-weight: 600;
+            color: var(--military-green) !important;
+        }
+        
+        /* Sidebar styles */
+        .sidebar {
+            background-color: var(--darker-bg);
+            border-right: 1px solid var(--military-green);
+            height: calc(100vh - 56px);
+            position: fixed;
+            padding: 20px 0;
+            width: 250px;
+            z-index: 100;
+        }
+        
+        .sidebar .nav-link {
+            color: #E0E0E0;
+            padding: 10px 20px;
+            border-left: 4px solid transparent;
+        }
+        
+        .sidebar .nav-link:hover {
+            background-color: rgba(107, 142, 35, 0.2);
+            border-left: 4px solid var(--military-olive);
+        }
+        
+        .sidebar .nav-link.active {
+            background-color: rgba(74, 93, 35, 0.3);
+            border-left: 4px solid var(--military-green);
+        }
+        
+        .sidebar .nav-link i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+        
+        /* Main content area */
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+            min-height: calc(100vh - 56px);
+        }
+        
+        /* Card styles */
+        .card {
+            background-color: var(--darker-bg);
+            border: 1px solid var(--military-green);
+            border-radius: 4px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        
+        .card-header {
+            background-color: var(--military-green);
+            color: white;
+            font-family: 'Oswald', sans-serif;
+            font-weight: 600;
+        }
+        
+        /* Table styles */
+        .table {
+            color: #E0E0E0;
+            border-color: var(--military-olive);
+        }
+        
+        .table thead th {
+            background-color: var(--military-green);
+            color: white;
+            border-color: var(--military-olive);
+        }
+        
+        .table tbody tr:hover {
+            background-color: rgba(107, 142, 35, 0.2);
+        }
+        
+        /* Form styles */
+        .military-input, .military-select, .military-textarea {
+            background-color: #2A3439;
+            border: 1px solid var(--military-olive);
+            color: #E0E0E0;
+        }
+        
+        .military-input:focus, .military-select:focus, .military-textarea:focus {
+            background-color: #2A3439;
+            border-color: var(--military-accent);
+            color: #FFFFFF;
+            box-shadow: 0 0 0 0.25rem rgba(255, 107, 53, 0.25);
+        }
+        
+        .btn-military {
+            background-color: var(--military-green);
+            border-color: var(--military-green);
+            color: white;
+        }
+        
+        .btn-military:hover {
+            background-color: var(--military-olive);
+            border-color: var(--military-olive);
+            color: white;
+        }
+        
+        /* Status badges */
+        .badge-operational {
+            background-color: var(--status-operational);
+        }
+        
+        .badge-maintenance {
+            background-color: var(--status-maintenance);
+            color: #212529;
+        }
+        
+        .badge-damaged {
+            background-color: var(--status-damaged);
+        }
+        
+        .badge-decommissioned {
+            background-color: var(--status-decommissioned);
+        }
+        
+        /* Dashboard stats */
+        .stat-card {
+            text-align: center;
+            padding: 15px;
+        }
+        
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--military-accent);
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* Search bar */
+        .military-search {
+            background-color: #2A3439;
+            border: 1px solid var(--military-olive);
+            color: #E0E0E0;
+            padding-left: 40px;
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 10px;
+            color: var(--military-olive);
+        }
+        
+        /* Readiness indicator */
+        .readiness-meter {
+            position: relative;
+            height: 30px;
+            background-color: #2A3439;
+            border-radius: 15px;
+            overflow: hidden;
+            border: 1px solid var(--military-olive);
+        }
+        
+        .readiness-fill {
+            position: absolute;
+            height: 100%;
+            background-color: var(--military-green);
+            transition: width 0.5s ease;
+        }
+        
+        .readiness-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            line-height: 30px;
+            color: white;
+            font-weight: bold;
+            z-index: 2;
+        }
+    </style>
+    
+    {% block extra_styles %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'equipment:dashboard' %}">
+                <i class="fas fa-shield-alt"></i> MILITARY INVENTORY
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><i class="fas fa-user-circle"></i> Admin</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page content -->
+    <div class="d-flex">
+        <!-- Sidebar navigation -->
+        <div class="sidebar">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link {% if active_nav == 'dashboard' %}active{% endif %}" 
+                       href="{% url 'equipment:dashboard' %}">
+                        <i class="fas fa-tachometer-alt"></i> Command Center
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if active_nav == 'roster' %}active{% endif %}" 
+                       href="{% url 'equipment:equipment_list' %}">
+                        <i class="fas fa-clipboard-list"></i> Equipment Roster
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if active_nav == 'maintenance' %}active{% endif %}" 
+                       href="{% url 'equipment:maintenance_list' %}">
+                        <i class="fas fa-tools"></i> Maintenance Bay
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if active_nav == 'units' %}active{% endif %}" 
+                       href="{% url 'equipment:unit_list' %}">
+                        <i class="fas fa-users"></i> Mission Planning
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if active_nav == 'reports' %}active{% endif %}" 
+                       href="{% url 'equipment:reports' %}">
+                        <i class="fas fa-chart-line"></i> Intel Reports
+                    </a>
+                </li>
+                <li class="nav-item mt-4">
+                    <div class="nav-link text-muted">
+                        <i class="fas fa-lock"></i> SECURITY LEVEL
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <div class="nav-link">
+                        <span class="badge bg-success">UNCLASSIFIED</span>
+                    </div>
+                </li>
+            </ul>
+        </div>
+        
+        <!-- Main content area -->
+        <div class="main-content">
+            <!-- Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            <!-- Page content -->
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <!-- JavaScript dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom page JavaScript -->
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

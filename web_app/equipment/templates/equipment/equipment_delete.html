@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}Decommission Equipment - Military Equipment Inventory{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a href="{% url 'equipment:equipment_detail' equipment.id %}" class="btn btn-sm btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+            <h1 class="d-inline-block mb-0">
+                <i class="fas fa-trash"></i> Decommission Equipment
+            </h1>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-6 mx-auto">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <i class="fas fa-exclamation-triangle"></i> Confirmation Required
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <p class="mb-0"><strong>Warning:</strong> This action will mark the equipment as decommissioned and cannot be undone.</p>
+                    </div>
+                    
+                    <h5 class="card-title">Equipment Details</h5>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="text-muted small">Equipment ID:</div>
+                            <div class="fw-bold">{{ equipment.id }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-muted small">Serial Number:</div>
+                            <div class="fw-bold"><code>{{ equipment.serial_number }}</code></div>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="text-muted small">Name:</div>
+                            <div class="fw-bold">{{ equipment.name }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-muted small">Category:</div>
+                            <div class="fw-bold text-uppercase">{{ equipment.category }}</div>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="text-muted small">Status:</div>
+                            <div class="fw-bold">
+                                {% if equipment.status == 'operational' %}
+                                    <span class="badge badge-operational">OPERATIONAL</span>
+                                {% elif equipment.status == 'maintenance' %}
+                                    <span class="badge badge-maintenance">MAINTENANCE</span>
+                                {% elif equipment.status == 'damaged' %}
+                                    <span class="badge badge-damaged">DAMAGED</span>
+                                {% elif equipment.status == 'decommissioned' %}
+                                    <span class="badge badge-decommissioned">DECOMMISSIONED</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-muted small">Assigned Unit:</div>
+                            <div class="fw-bold">{{ equipment.assigned_unit|default:"N/A" }}</div>
+                        </div>
+                    </div>
+                    
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'equipment:equipment_detail' equipment.id %}" class="btn btn-outline-secondary me-md-2">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Confirm Decommission
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

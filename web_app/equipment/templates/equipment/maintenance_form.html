@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+
+{% block title %}Log Maintenance - {{ equipment.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a href="{% url 'equipment:equipment_detail' equipment.id %}" class="btn btn-sm btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left"></i> Back to Equipment
+            </a>
+            <h1 class="d-inline-block mb-0"><i class="fas fa-tools"></i> Log Maintenance</h1>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between">
+                    <span>Equipment Information</span>
+                    {% if equipment.status == 'operational' %}
+                        <span class="badge badge-operational">OPERATIONAL</span>
+                    {% elif equipment.status == 'maintenance' %}
+                        <span class="badge badge-maintenance">MAINTENANCE</span>
+                    {% elif equipment.status == 'damaged' %}
+                        <span class="badge badge-damaged">DAMAGED</span>
+                    {% elif equipment.status == 'decommissioned' %}
+                        <span class="badge badge-decommissioned">DECOMMISSIONED</span>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="text-muted small">ID:</div>
+                            <div class="fw-bold">{{ equipment.id }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-muted small">Name:</div>
+                            <div class="fw-bold">{{ equipment.name }}</div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="text-muted small">Category:</div>
+                            <div class="fw-bold">{{ equipment.category|upper }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-muted small">Serial Number:</div>
+                            <div class="fw-bold"><code>{{ equipment.serial_number }}</code></div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="text-muted small">Last Maintenance:</div>
+                            <div class="fw-bold">{{ equipment.last_maintenance|default:"Never" }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-muted small">Next Due:</div>
+                            <div class="fw-bold">{{ equipment.next_maintenance_due|default:"Not Scheduled" }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-clipboard-check"></i> Maintenance Details
+                </div>
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.maintenance_date.id_for_label }}" class="form-label">{{ form.maintenance_date.label }}</label>
+                                {{ form.maintenance_date }}
+                                {% if form.maintenance_date.errors %}
+                                    <div class="text-danger mt-1">{{ form.maintenance_date.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.maintenance_type.id_for_label }}" class="form-label">{{ form.maintenance_type.label }}</label>
+                                {{ form.maintenance_type }}
+                                {% if form.maintenance_type.errors %}
+                                    <div class="text-danger mt-1">{{ form.maintenance_type.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }}</label>
+                                {{ form.description }}
+                                {% if form.description.errors %}
+                                    <div class="text-danger mt-1">{{ form.description.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.performed_by.id_for_label }}" class="form-label">{{ form.performed_by.label }}</label>
+                                {{ form.performed_by }}
+                                {% if form.performed_by.errors %}
+                                    <div class="text-danger mt-1">{{ form.performed_by.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.notes.id_for_label }}" class="form-label">{{ form.notes.label }}</label>
+                                {{ form.notes }}
+                                {% if form.notes.errors %}
+                                    <div class="text-danger mt-1">{{ form.notes.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" value="1" id="update_status" name="update_status">
+                            <label class="form-check-label" for="update_status">
+                                Update equipment status to "Operational" after maintenance
+                            </label>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" value="1" id="schedule_next" name="schedule_next">
+                            <label class="form-check-label" for="schedule_next">
+                                Schedule next maintenance (90 days from now)
+                            </label>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a href="{% url 'equipment:equipment_detail' equipment.id %}" class="btn btn-outline-secondary me-md-2">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-military">
+                                <i class="fas fa-save"></i> Log Maintenance
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

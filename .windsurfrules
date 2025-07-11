@@ -1,0 +1,178 @@
+# Military Equipment Inventory System - Development Rules
+
+## Project Overview
+This is a multi-container Military Equipment Inventory System with the following architecture:
+- **Web App**: Django/Flask frontend for military inventory management UI
+- **API Service**: FastAPI backend for equipment CRUD operations
+- **Database**: PostgreSQL for persistent military equipment data storage
+- **Cache**: Redis for frequently accessed data and performance optimization
+
+## Core Learning Objectives
+- Implement effective caching patterns with Redis
+- Manage database connections and optimizations
+- Design clean API communication between services
+- Build scalable multi-container architecture
+
+## Technology Stack Requirements
+
+### Web App (Frontend)
+- **Framework**: Django or Flask (prefer Django for admin interface)
+- **Templates**: Jinja2 templates with military-themed dark UI (Bootstrap/Tailwind CSS)
+- **Features**: Equipment listing, search, add/edit forms, tactical dashboard
+- **Theme**: Military green/olive color scheme with tactical styling
+- **Port**: 8000 (Django) or 5000 (Flask)
+
+### API Service (Backend)
+- **Framework**: FastAPI
+- **Features**: Full CRUD operations, data validation, API documentation
+- **Port**: 8001
+- **Documentation**: Auto-generated OpenAPI/Swagger docs
+
+### Database
+- **Type**: PostgreSQL
+- **Port**: 5432
+- **Schema**: Equipment table with fields like id, name, category, status, location, etc.
+
+### Cache
+- **Type**: Redis
+- **Port**: 6379
+- **Usage**: Cache frequently accessed equipment data, search results, statistics
+
+## Development Guidelines
+
+
+
+### Database Design
+- Create a Military Equipment table with essential fields:
+  - id (primary key)
+  - name (string, required)
+  - category (enum: weapons, vehicles, communications, protective-gear, medical, electronics)
+  - status (enum: operational, maintenance, damaged, decommissioned)
+  - location (string - base/unit assignment)
+  - serial_number (string, unique)
+  - classification_level (enum: unclassified, confidential, secret)
+  - assigned_unit (string)
+  - assigned_personnel (string)
+  - purchase_date (date)
+  - last_maintenance (date)
+  - next_maintenance_due (date)
+  - condition_rating (integer, 1-5)
+  - created_at, updated_at (timestamps)
+
+### API Endpoints (FastAPI)
+Implement these RESTful endpoints:
+- `GET /equipment` - List all equipment with pagination and security filtering
+- `GET /equipment/{id}` - Get specific equipment details
+- `POST /equipment` - Create new equipment entry
+- `PUT /equipment/{id}` - Update equipment status/details
+- `DELETE /equipment/{id}` - Decommission equipment
+- `GET /equipment/search` - Search equipment by name/category/serial
+- `GET /equipment/stats` - Get inventory statistics and readiness reports
+- `GET /equipment/maintenance` - Get maintenance schedule and overdue items
+- `GET /equipment/unit/{unit_id}` - Get equipment by assigned unit
+- `POST /equipment/{id}/assign` - Assign equipment to personnel/unit
+
+### Web App Features
+- **Command Dashboard**: Military-styled overview with operational readiness status
+- **Equipment Roster**: Complete inventory listing with search and filtering
+- **Mission Equipment**: Add/Edit equipment forms with military specifications
+- **Unit Assignment**: Equipment assignment and personnel tracking
+- **Maintenance Schedule**: Preventive maintenance calendar and alerts
+- **Readiness Reports**: Unit readiness and equipment availability statistics
+- **Classification Handling**: Proper handling of classified equipment data
+- **Dark Theme**: Military green/olive color scheme with tactical styling
+
+### Caching Strategy
+- Cache equipment lists for 5 minutes
+- Cache individual equipment details for 10 minutes
+- Cache search results for 2 minutes
+- Cache statistics for 30 minutes
+- Implement cache invalidation on data updates
+
+### Docker Configuration
+- Use docker-compose for multi-container setup
+- Configure proper networking between containers
+- Set up environment variables for database connections
+- Include health checks for all services
+
+## Implementation Rules
+
+### Database Connections
+- Use connection pooling for PostgreSQL
+- Implement proper connection error handling
+- Use environment variables for database credentials
+- Include database migration scripts
+
+### API Communication
+- Web app should communicate with API service via HTTP
+- Implement proper error handling for API calls
+- Use async/await patterns where appropriate
+- Include request/response logging
+
+### Error Handling
+- Implement comprehensive error handling at all layers
+- Return appropriate HTTP status codes
+- Log errors with sufficient detail
+- Provide user-friendly error messages
+
+### Security
+- Validate all input data with military-grade validation
+- Use parameterized queries to prevent SQL injection
+- Implement role-based access control (RBAC) for different clearance levels
+- Handle classified equipment data with appropriate security measures
+- Sanitize data before caching
+- Log all access attempts for security auditing
+
+### Performance
+- Implement database indexing on frequently queried fields
+- Use Redis for caching expensive operations
+- Optimize database queries to avoid N+1 problems
+- Include pagination for large datasets
+
+## Testing Requirements
+- Unit tests for API endpoints
+- Integration tests for database operations
+- Cache functionality tests
+- Docker container health checks
+
+
+### Military Theme Requirements
+- **Color Scheme**: Primary military green (#4A5D23), secondary olive (#6B8E23), accent orange (#FF6B35)
+- **Typography**: Use monospace fonts for data displays, bold sans-serif for headers
+- **Layout**: Grid-based tactical layout with clear hierarchy
+- **Icons**: Use military-style icons (FontAwesome military set)
+- **Background**: Dark theme with subtle texture/pattern
+- **Status Indicators**: Color-coded status badges (green=operational, yellow=maintenance, red=damaged)
+
+### Navigation Structure
+- **Command Center**: Main dashboard
+- **Equipment Roster**: Full inventory listing
+- **Mission Planning**: Equipment assignment and tracking
+- **Maintenance Bay**: Maintenance scheduling and history
+- **Intel Reports**: Statistics and readiness reports
+- **Admin HQ**: Administrative functions
+
+## Development Workflow
+1. Start with database schema and migrations
+2. Build FastAPI service with basic CRUD operations
+3. Implement Redis caching in API service
+4. Create web app with basic UI
+5. Add search and filtering functionality
+6. Implement statistics and dashboard features
+7. Add comprehensive error handling and logging
+8. Write tests and documentation
+
+## Code Quality Standards
+- Follow PEP 8 for Python code
+- Use type hints in FastAPI
+- Include docstrings for all functions
+- Implement proper logging throughout
+- Use environment variables for configuration
+- Keep functions focused and modular
+
+## Deployment Notes
+- All services should be containerized
+- Include proper health checks
+- Use volumes for persistent data
+- Configure proper networking between containers
+- Include backup and restore procedures for PostgreSQL

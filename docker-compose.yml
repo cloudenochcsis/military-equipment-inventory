@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  web_app:
+    build: ./web_app
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./web_app:/app
+    environment:
+      - API_URL=http://api_service:8001
+      - DEBUG=True
+    depends_on:
+      - api_service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  api_service:
+    build: ./api_service
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./api_service:/app
+    environment:
+      - POSTGRES_SERVER=database
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=military_inventory
+      - REDIS_HOST=cache
+      - REDIS_PORT=6379
+    depends_on:
+      - database
+      - cache
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  database:
+    image: postgres:13
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=military_inventory
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  cache:
+    image: redis:6-alpine
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:

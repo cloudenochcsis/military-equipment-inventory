@@ -1,0 +1,403 @@
+{% extends 'base.html' %}
+
+{% block title %}Intel Reports - Military Equipment Inventory{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0"><i class="fas fa-chart-line"></i> Intel Reports</h1>
+        <div class="d-flex">
+            <button class="btn btn-sm btn-military ms-2" id="refreshBtn">
+                <i class="fas fa-sync-alt"></i> Refresh Data
+            </button>
+            <div class="dropdown ms-2">
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-download"></i> Export
+                </button>
+                <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="exportDropdown">
+                    <li><a class="dropdown-item" href="#"><i class="fas fa-file-pdf"></i> PDF Report</a></li>
+                    <li><a class="dropdown-item" href="#"><i class="fas fa-file-csv"></i> CSV Data</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Readiness Overview -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-shield-alt"></i> Combat Readiness Overview
+        </div>
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <h5>Overall Equipment Readiness</h5>
+                    <div class="readiness-meter">
+                        <div class="readiness-fill" style="width: {{ stats.readiness_percentage|default:0 }}%;"></div>
+                        <div class="readiness-text">{{ stats.readiness_percentage|default:0 }}% OPERATIONAL</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <div class="stat-value text-success">{{ stats.operational_count|default:"0" }}</div>
+                        <div class="stat-label">OPERATIONAL</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <div class="stat-value text-warning">{{ stats.maintenance_count|default:"0" }}</div>
+                        <div class="stat-label">MAINTENANCE</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <div class="stat-value text-danger">{{ stats.damaged_count|default:"0" }}</div>
+                        <div class="stat-label">DAMAGED</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <div class="stat-value text-muted">{{ stats.decommissioned_count|default:"0" }}</div>
+                        <div class="stat-label">DECOMMISSIONED</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Category Distribution -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-tags"></i> Equipment by Category
+                </div>
+                <div class="card-body">
+                    <canvas id="categoryChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Status Distribution -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-heartbeat"></i> Equipment by Status
+                </div>
+                <div class="card-body">
+                    <canvas id="statusChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Classification Distribution -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-lock"></i> Classification Distribution
+                </div>
+                <div class="card-body">
+                    <canvas id="classificationChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Unit Distribution -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-users"></i> Equipment by Unit
+                </div>
+                <div class="card-body">
+                    <canvas id="unitChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Maintenance Trends -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-tools"></i> Maintenance Trends
+        </div>
+        <div class="card-body">
+            <canvas id="maintenanceTrendChart" height="200"></canvas>
+        </div>
+    </div>
+    
+    <!-- Detailed Reports Section -->
+    <div class="card">
+        <div class="card-header">
+            <i class="fas fa-file-alt"></i> Available Reports
+        </div>
+        <div class="card-body">
+            <div class="list-group">
+                <a href="{% url 'equipment:readiness_report' %}" class="list-group-item list-group-item-action bg-dark border-secondary d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-1">Equipment Readiness Report</h5>
+                        <p class="mb-1 text-muted">Detailed operational status of all equipment</p>
+                    </div>
+                    <span class="badge bg-military rounded-pill">View</span>
+                </a>
+                <a href="#" class="list-group-item list-group-item-action bg-dark border-secondary d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-1">Maintenance Schedule Report</h5>
+                        <p class="mb-1 text-muted">Upcoming and overdue maintenance tasks</p>
+                    </div>
+                    <span class="badge bg-military rounded-pill">View</span>
+                </a>
+                <a href="#" class="list-group-item list-group-item-action bg-dark border-secondary d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-1">Unit Equipment Distribution Report</h5>
+                        <p class="mb-1 text-muted">Distribution of equipment across units</p>
+                    </div>
+                    <span class="badge bg-military rounded-pill">View</span>
+                </a>
+                <a href="#" class="list-group-item list-group-item-action bg-dark border-secondary d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-1">Acquisition Analysis Report</h5>
+                        <p class="mb-1 text-muted">Equipment acquisition trends by date</p>
+                    </div>
+                    <span class="badge bg-military rounded-pill">View</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Category distribution chart
+    const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+    const categoryChart = new Chart(categoryCtx, {
+        type: 'pie',
+        data: {
+            labels: ['Weapons', 'Vehicles', 'Communications', 'Protective Gear', 'Medical', 'Electronics'],
+            datasets: [{
+                data: [
+                    {{ stats.category_counts.weapons|default:"0" }},
+                    {{ stats.category_counts.vehicles|default:"0" }},
+                    {{ stats.category_counts.communications|default:"0" }},
+                    {{ stats.category_counts.protective_gear|default:"0" }},
+                    {{ stats.category_counts.medical|default:"0" }},
+                    {{ stats.category_counts.electronics|default:"0" }}
+                ],
+                backgroundColor: [
+                    'rgba(220, 53, 69, 0.8)',   // Weapons - red
+                    'rgba(25, 135, 84, 0.8)',   // Vehicles - green
+                    'rgba(13, 110, 253, 0.8)',  // Communications - blue
+                    'rgba(108, 117, 125, 0.8)', // Protective Gear - gray
+                    'rgba(255, 193, 7, 0.8)',   // Medical - yellow
+                    'rgba(111, 66, 193, 0.8)'   // Electronics - purple
+                ],
+                borderColor: '#1E2527',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        color: '#E0E0E0'
+                    }
+                }
+            }
+        }
+    });
+    
+    // Status distribution chart
+    const statusCtx = document.getElementById('statusChart').getContext('2d');
+    const statusChart = new Chart(statusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Operational', 'Maintenance', 'Damaged', 'Decommissioned'],
+            datasets: [{
+                data: [
+                    {{ stats.operational_count|default:"0" }},
+                    {{ stats.maintenance_count|default:"0" }},
+                    {{ stats.damaged_count|default:"0" }},
+                    {{ stats.decommissioned_count|default:"0" }}
+                ],
+                backgroundColor: [
+                    'rgba(88, 166, 92, 0.8)',    // Operational - green
+                    'rgba(255, 193, 7, 0.8)',    // Maintenance - yellow
+                    'rgba(255, 107, 53, 0.8)',   // Damaged - orange
+                    'rgba(220, 53, 69, 0.8)'     // Decommissioned - red
+                ],
+                borderColor: '#1E2527',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        color: '#E0E0E0'
+                    }
+                }
+            }
+        }
+    });
+    
+    // Classification distribution chart
+    const classificationCtx = document.getElementById('classificationChart').getContext('2d');
+    const classificationChart = new Chart(classificationCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Unclassified', 'Confidential', 'Secret'],
+            datasets: [{
+                label: 'Equipment Count',
+                data: [
+                    {{ stats.classification_counts.unclassified|default:"0" }},
+                    {{ stats.classification_counts.confidential|default:"0" }},
+                    {{ stats.classification_counts.secret|default:"0" }}
+                ],
+                backgroundColor: [
+                    'rgba(88, 166, 92, 0.8)',    // Unclassified - green
+                    'rgba(255, 193, 7, 0.8)',    // Confidential - yellow
+                    'rgba(220, 53, 69, 0.8)'     // Secret - red
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: '#E0E0E0'
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: '#E0E0E0'
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+    
+    // Unit distribution chart
+    const unitCtx = document.getElementById('unitChart').getContext('2d');
+    const unitData = {
+        labels: {{ stats.units|default:"[]"|safe }},
+        datasets: [{
+            label: 'Equipment Count',
+            data: {{ stats.unit_counts|default:"[]"|safe }},
+            backgroundColor: 'rgba(74, 93, 35, 0.8)',
+            borderColor: 'rgba(74, 93, 35, 1)',
+            borderWidth: 1
+        }]
+    };
+    const unitChart = new Chart(unitCtx, {
+        type: 'bar',
+        data: unitData,
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: '#E0E0E0'
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: '#E0E0E0'
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+    
+    // Maintenance trend chart
+    const maintenanceTrendCtx = document.getElementById('maintenanceTrendChart').getContext('2d');
+    const maintenanceTrendChart = new Chart(maintenanceTrendCtx, {
+        type: 'line',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            datasets: [{
+                label: 'Preventive Maintenance',
+                data: {{ stats.maintenance_trends.preventive|default:"[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]"|safe }},
+                borderColor: 'rgba(88, 166, 92, 1)',
+                backgroundColor: 'rgba(88, 166, 92, 0.1)',
+                tension: 0.4,
+                fill: true
+            }, {
+                label: 'Corrective Maintenance',
+                data: {{ stats.maintenance_trends.corrective|default:"[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]"|safe }},
+                borderColor: 'rgba(255, 107, 53, 1)',
+                backgroundColor: 'rgba(255, 107, 53, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: '#E0E0E0'
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: '#E0E0E0'
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        color: '#E0E0E0'
+                    }
+                }
+            }
+        }
+    });
+    
+    // Refresh button
+    document.getElementById('refreshBtn').addEventListener('click', function() {
+        window.location.reload();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,27 @@
+[run]
+source = 
+    equipment
+    inventory_project
+omit =
+    */migrations/*
+    */tests/*
+    */apps.py
+    */admin.py
+    */manage.py
+    */wsgi.py
+    */asgi.py
+    */settings.py
+    */urls.py
+    */static/*
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    pass
+    raise ImportError
+
+[html]
+directory = htmlcov

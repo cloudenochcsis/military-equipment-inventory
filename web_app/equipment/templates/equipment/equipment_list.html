@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+
+{% block title %}Equipment Roster - Military Equipment Inventory{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0"><i class="fas fa-clipboard-list"></i> Equipment Roster</h1>
+        <a href="{% url 'equipment:equipment_create' %}" class="btn btn-military">
+            <i class="fas fa-plus"></i> Add New Equipment
+        </a>
+    </div>
+    
+    <!-- Search and filter section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-search"></i> Search & Filter
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <!-- Search bar -->
+                <div class="col-md-6">
+                    <form action="{% url 'equipment:equipment_search' %}" method="get" class="position-relative">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" name="q" class="form-control military-search" placeholder="Search by name, serial number, or location...">
+                    </form>
+                </div>
+                
+                <!-- Filters -->
+                <div class="col-md-6">
+                    <form action="{% url 'equipment:equipment_list' %}" method="get" class="row g-3">
+                        <div class="col-md-4">
+                            <select name="status" class="form-select military-select">
+                                <option value="">All Status</option>
+                                <option value="operational" {% if status_filter == 'operational' %}selected{% endif %}>Operational</option>
+                                <option value="maintenance" {% if status_filter == 'maintenance' %}selected{% endif %}>Maintenance</option>
+                                <option value="damaged" {% if status_filter == 'damaged' %}selected{% endif %}>Damaged</option>
+                                <option value="decommissioned" {% if status_filter == 'decommissioned' %}selected{% endif %}>Decommissioned</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <select name="category" class="form-select military-select">
+                                <option value="">All Categories</option>
+                                <option value="weapons" {% if category_filter == 'weapons' %}selected{% endif %}>Weapons</option>
+                                <option value="vehicles" {% if category_filter == 'vehicles' %}selected{% endif %}>Vehicles</option>
+                                <option value="communications" {% if category_filter == 'communications' %}selected{% endif %}>Communications</option>
+                                <option value="protective-gear" {% if category_filter == 'protective-gear' %}selected{% endif %}>Protective Gear</option>
+                                <option value="medical" {% if category_filter == 'medical' %}selected{% endif %}>Medical</option>
+                                <option value="electronics" {% if category_filter == 'electronics' %}selected{% endif %}>Electronics</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="submit" class="btn btn-military w-100">Apply Filters</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Equipment table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="fas fa-list"></i> Equipment List</span>
+            <span>Total: <strong>{{ total_items|default:"0" }}</strong></span>
+        </div>
+        <div class="card-body">
+            {% if equipment_list %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Serial Number</th>
+                                <th>Status</th>
+                                <th>Location</th>
+                                <th>Classification</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in equipment_list %}
+                            <tr>
+                                <td>{{ item.id }}</td>
+                                <td>{{ item.name }}</td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ item.category|upper }}</span>
+                                </td>
+                                <td><code>{{ item.serial_number }}</code></td>
+                                <td>
+                                    {% if item.status == 'operational' %}
+                                        <span class="badge badge-operational">OPERATIONAL</span>
+                                    {% elif item.status == 'maintenance' %}
+                                        <span class="badge badge-maintenance">MAINTENANCE</span>
+                                    {% elif item.status == 'damaged' %}
+                                        <span class="badge badge-damaged">DAMAGED</span>
+                                    {% elif item.status == 'decommissioned' %}
+                                        <span class="badge badge-decommissioned">DECOMMISSIONED</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ item.location }}</td>
+                                <td>
+                                    {% if item.classification_level == 'unclassified' %}
+                                        <span class="badge bg-success">UNCLASSIFIED</span>
+                                    {% elif item.classification_level == 'confidential' %}
+                                        <span class="badge bg-warning text-dark">CONFIDENTIAL</span>
+                                    {% elif item.classification_level == 'secret' %}
+                                        <span class="badge bg-danger">SECRET</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{% url 'equipment:equipment_detail' item.id %}" class="btn btn-sm btn-military" title="View">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'equipment:equipment_update' item.id %}" class="btn btn-sm btn-outline-warning" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'equipment:equipment_delete' item.id %}" class="btn btn-sm btn-outline-danger" title="Decommission">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                {% if pages|length > 1 %}
+                <nav aria-label="Equipment pagination" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if current_page > 1 %}
+                        <li class="page-item">
+                            <a class="page-link bg-dark border-secondary text-light" 
+                               href="?page={{ current_page|add:"-1" }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}"
+                               aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for page_num in pages %}
+                        <li class="page-item {% if page_num == current_page %}active{% endif %}">
+                            <a class="page-link {% if page_num != current_page %}bg-dark border-secondary text-light{% endif %}"
+                               href="?page={{ page_num }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}">
+                                {{ page_num }}
+                            </a>
+                        </li>
+                        {% endfor %}
+                        
+                        {% if current_page < pages|last %}
+                        <li class="page-item">
+                            <a class="page-link bg-dark border-secondary text-light" 
+                               href="?page={{ current_page|add:"1" }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}"
+                               aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i> No equipment found matching your criteria.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,321 @@
+{% extends 'base.html' %}
+
+{% block title %}Equipment Readiness Report - Military Equipment Inventory{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a href="{% url 'equipment:reports' %}" class="btn btn-sm btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left"></i> Back to Reports
+            </a>
+            <h1 class="d-inline-block mb-0">
+                <i class="fas fa-clipboard-check"></i> Equipment Readiness Report
+            </h1>
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-sm btn-military" id="printBtn">
+                <i class="fas fa-print"></i> Print Report
+            </button>
+            <button class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-download"></i> Export PDF
+            </button>
+        </div>
+    </div>
+    
+    <!-- Readiness Summary -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-shield-alt"></i> Combat Readiness Summary
+        </div>
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h5>Overall Equipment Readiness</h5>
+                    <div class="readiness-meter">
+                        <div class="readiness-fill" style="width: {{ stats.readiness_percentage|default:0 }}%;"></div>
+                        <div class="readiness-text">{{ stats.readiness_percentage|default:0 }}% OPERATIONAL</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <canvas id="readinessChart" height="150"></canvas>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <div class="stat-value text-success">{{ stats.operational_count|default:"0" }}</div>
+                        <div class="stat-label">OPERATIONAL</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <div class="stat-value text-warning">{{ stats.maintenance_count|default:"0" }}</div>
+                        <div class="stat-label">MAINTENANCE</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <div class="stat-value text-danger">{{ stats.damaged_count|default:"0" }}</div>
+                        <div class="stat-label">DAMAGED</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <div class="stat-value text-muted">{{ stats.decommissioned_count|default:"0" }}</div>
+                        <div class="stat-label">DECOMMISSIONED</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Readiness by Category -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-tags"></i> Readiness by Category
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Total</th>
+                            <th>Operational</th>
+                            <th>Maintenance</th>
+                            <th>Damaged</th>
+                            <th>Decommissioned</th>
+                            <th>Readiness %</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for category in stats.category_readiness %}
+                        <tr>
+                            <td class="text-uppercase">{{ category.name }}</td>
+                            <td>{{ category.total }}</td>
+                            <td>{{ category.operational }}</td>
+                            <td>{{ category.maintenance }}</td>
+                            <td>{{ category.damaged }}</td>
+                            <td>{{ category.decommissioned }}</td>
+                            <td>{{ category.readiness_percent }}%</td>
+                            <td>
+                                {% if category.readiness_percent >= 90 %}
+                                    <span class="badge bg-success">COMBAT READY</span>
+                                {% elif category.readiness_percent >= 75 %}
+                                    <span class="badge bg-warning text-dark">LIMITED OPERATIONS</span>
+                                {% else %}
+                                    <span class="badge bg-danger">CRITICAL</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Readiness by Unit -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-users"></i> Readiness by Unit
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Unit</th>
+                            <th>Total</th>
+                            <th>Operational</th>
+                            <th>Non-Operational</th>
+                            <th>Readiness %</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for unit in stats.unit_readiness %}
+                        <tr>
+                            <td>{{ unit.name }}</td>
+                            <td>{{ unit.total }}</td>
+                            <td>{{ unit.operational }}</td>
+                            <td>{{ unit.total|add:"-"|add:unit.operational }}</td>
+                            <td>{{ unit.readiness_percent }}%</td>
+                            <td>
+                                {% if unit.readiness_percent >= 90 %}
+                                    <span class="badge bg-success">COMBAT READY</span>
+                                {% elif unit.readiness_percent >= 75 %}
+                                    <span class="badge bg-warning text-dark">LIMITED OPERATIONS</span>
+                                {% else %}
+                                    <span class="badge bg-danger">CRITICAL</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Operational Equipment List -->
+    <div class="card">
+        <div class="card-header">
+            <i class="fas fa-check-circle"></i> Operational Equipment
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Category</th>
+                            <th>Serial Number</th>
+                            <th>Assigned Unit</th>
+                            <th>Condition</th>
+                            <th>Next Maintenance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in equipment %}
+                        <tr>
+                            <td>{{ item.id }}</td>
+                            <td>
+                                <a href="{% url 'equipment:equipment_detail' item.id %}" class="text-light">
+                                    {{ item.name }}
+                                </a>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ item.category|upper }}</span>
+                            </td>
+                            <td><code>{{ item.serial_number }}</code></td>
+                            <td>{{ item.assigned_unit|default:"Unassigned" }}</td>
+                            <td>
+                                {% for i in "12345" %}
+                                    {% if forloop.counter <= item.condition_rating %}
+                                        <i class="fas fa-star text-warning"></i>
+                                    {% else %}
+                                        <i class="far fa-star text-muted"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            </td>
+                            <td>{{ item.next_maintenance_due|default:"Not scheduled" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Report Footer -->
+    <div class="card mt-4 mb-4 bg-dark">
+        <div class="card-body text-center">
+            <div class="small text-muted">
+                MILITARY EQUIPMENT INVENTORY SYSTEM | CLASSIFIED: UNCLASSIFIED
+            </div>
+            <div class="small text-muted">
+                Report generated: {% now "F j, Y H:i" %} | Approved for distribution
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Readiness chart
+    const readinessCtx = document.getElementById('readinessChart').getContext('2d');
+    const readinessChart = new Chart(readinessCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Operational', 'Non-Operational'],
+            datasets: [{
+                data: [
+                    {{ stats.operational_count|default:"0" }},
+                    {{ stats.total_count|default:"0"|add:"-"|add:stats.operational_count|default:"0" }}
+                ],
+                backgroundColor: [
+                    'rgba(88, 166, 92, 0.8)',
+                    'rgba(220, 53, 69, 0.8)'
+                ],
+                borderColor: '#1E2527',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        color: '#E0E0E0'
+                    }
+                }
+            }
+        }
+    });
+    
+    // Print button
+    document.getElementById('printBtn').addEventListener('click', function() {
+        window.print();
+    });
+</script>
+{% endblock %}
+
+{% block extra_styles %}
+<style>
+    @media print {
+        body {
+            background-color: white;
+            color: black;
+        }
+        
+        .navbar, .sidebar, .btn, .dropdown-toggle {
+            display: none !important;
+        }
+        
+        .main-content {
+            margin-left: 0;
+            padding: 0;
+        }
+        
+        .card {
+            border: 1px solid #888;
+            box-shadow: none;
+            break-inside: avoid;
+        }
+        
+        .card-header {
+            background-color: #ddd;
+            color: black;
+        }
+        
+        .table {
+            color: black;
+            border-color: #888;
+        }
+        
+        .table thead th {
+            background-color: #ddd;
+            color: black;
+        }
+        
+        .stat-value {
+            color: black !important;
+        }
+        
+        .readiness-meter {
+            border: 1px solid #888;
+        }
+        
+        .readiness-fill {
+            background-color: #58A65C;
+        }
+    }
+</style>
+{% endblock %}

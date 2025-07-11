@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+
+{% block title %}Maintenance Bay - Military Equipment Inventory{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0"><i class="fas fa-tools"></i> Maintenance Bay</h1>
+    </div>
+    
+    <!-- Maintenance overview -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-wrench"></i> Maintenance Overview
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <div class="stat-value text-danger">{{ maintenance_items.overdue|default:"0" }}</div>
+                        <div class="stat-label">OVERDUE</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <div class="stat-value text-warning">{{ maintenance_items.due_soon|default:"0" }}</div>
+                        <div class="stat-label">DUE THIS WEEK</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <div class="stat-value text-info">{{ maintenance_items.scheduled|default:"0" }}</div>
+                        <div class="stat-label">SCHEDULED</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <div class="stat-value text-success">{{ maintenance_items.total|default:"0" }}</div>
+                        <div class="stat-label">TOTAL</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Maintenance equipment table -->
+    <div class="card">
+        <div class="card-header">
+            <i class="fas fa-clipboard-check"></i> Equipment Due for Maintenance
+        </div>
+        <div class="card-body">
+            {% if maintenance_items.equipment %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Status</th>
+                                <th>Last Maintenance</th>
+                                <th>Next Due</th>
+                                <th>Days Overdue</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in maintenance_items.equipment %}
+                            <tr class="{% if item.days_overdue > 0 %}table-danger{% elif item.days_overdue > -7 %}table-warning{% endif %}">
+                                <td>{{ item.id }}</td>
+                                <td>{{ item.name }}</td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ item.category|upper }}</span>
+                                </td>
+                                <td>
+                                    {% if item.status == 'operational' %}
+                                        <span class="badge badge-operational">OPERATIONAL</span>
+                                    {% elif item.status == 'maintenance' %}
+                                        <span class="badge badge-maintenance">MAINTENANCE</span>
+                                    {% elif item.status == 'damaged' %}
+                                        <span class="badge badge-damaged">DAMAGED</span>
+                                    {% elif item.status == 'decommissioned' %}
+                                        <span class="badge badge-decommissioned">DECOMMISSIONED</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ item.last_maintenance|default:"Never" }}</td>
+                                <td>{{ item.next_maintenance_due }}</td>
+                                <td>
+                                    {% if item.days_overdue > 0 %}
+                                        <span class="badge bg-danger">{{ item.days_overdue }} DAYS</span>
+                                    {% elif item.days_overdue > -7 %}
+                                        <span class="badge bg-warning text-dark">DUE SOON</span>
+                                    {% else %}
+                                        <span class="badge bg-success">ON SCHEDULE</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{% url 'equipment:equipment_detail' item.id %}" class="btn btn-sm btn-military" title="View">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'equipment:maintenance_add' item.id %}" class="btn btn-sm btn-info" title="Log Maintenance">
+                                            <i class="fas fa-tools"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                {% if maintenance_items.pages|length > 1 %}
+                <nav aria-label="Maintenance pagination" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if maintenance_items.current_page > 1 %}
+                        <li class="page-item">
+                            <a class="page-link bg-dark border-secondary text-light" 
+                               href="?page={{ maintenance_items.current_page|add:"-1" }}"
+                               aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for page_num in maintenance_items.pages %}
+                        <li class="page-item {% if page_num == maintenance_items.current_page %}active{% endif %}">
+                            <a class="page-link {% if page_num != maintenance_items.current_page %}bg-dark border-secondary text-light{% endif %}"
+                               href="?page={{ page_num }}">
+                                {{ page_num }}
+                            </a>
+                        </li>
+                        {% endfor %}
+                        
+                        {% if maintenance_items.current_page < maintenance_items.pages|last %}
+                        <li class="page-item">
+                            <a class="page-link bg-dark border-secondary text-light" 
+                               href="?page={{ maintenance_items.current_page|add:"1" }}"
+                               aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle"></i> All equipment is up-to-date with maintenance.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

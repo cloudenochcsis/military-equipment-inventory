@@ -1,0 +1,305 @@
+{% extends 'base.html' %}
+
+{% block title %}Command Center - Military Equipment Inventory{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0"><i class="fas fa-tachometer-alt"></i> Command Center</h1>
+        <div class="d-flex align-items-center">
+            <div class="me-2">Last updated:</div>
+            <div id="lastUpdated">{{ current_time|date:"H:i:s" }}</div>
+            <button class="btn btn-sm btn-military ms-3" id="refreshBtn">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+    </div>
+    
+    <!-- Operational Readiness Overview -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="fas fa-shield-alt"></i> Operational Readiness Status</span>
+            <div class="d-flex align-items-center">
+                <div class="me-2">Overall Readiness:</div>
+                <div class="me-3">
+                    <span class="badge rounded-pill bg-success">{{ stats.readiness_percentage|default:"0" }}%</span>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <div class="stat-value text-success">{{ stats.operational_count|default:"0" }}</div>
+                        <div class="stat-label">OPERATIONAL</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <div class="stat-value text-warning">{{ stats.maintenance_count|default:"0" }}</div>
+                        <div class="stat-label">MAINTENANCE</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <div class="stat-value text-danger">{{ stats.damaged_count|default:"0" }}</div>
+                        <div class="stat-label">DAMAGED</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <div class="stat-value text-muted">{{ stats.decommissioned_count|default:"0" }}</div>
+                        <div class="stat-label">DECOMMISSIONED</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Readiness chart -->
+            <div class="mt-4">
+                <canvas id="readinessChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Equipment by Category -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-th-list"></i> Equipment by Category
+                </div>
+                <div class="card-body">
+                    <canvas id="categoryChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Equipment by Classification -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-lock"></i> Classification Distribution
+                </div>
+                <div class="card-body">
+                    <canvas id="classificationChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Maintenance Alerts -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <i class="fas fa-exclamation-triangle"></i> Maintenance Alerts
+        </div>
+        <div class="card-body">
+            {% if maintenance_items %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Due Date</th>
+                                <th>Days Overdue</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in maintenance_items %}
+                            <tr>
+                                <td>{{ item.id }}</td>
+                                <td>{{ item.name }}</td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ item.category|upper }}</span>
+                                </td>
+                                <td>{{ item.next_maintenance_due }}</td>
+                                <td>
+                                    <span class="badge bg-danger">{{ item.days_overdue }}</span>
+                                </td>
+                                <td>
+                                    <a href="{% url 'equipment:equipment_detail' item.id %}" class="btn btn-sm btn-military">
+                                        <i class="fas fa-tools"></i> Service
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-3">
+                    <a href="{% url 'equipment:maintenance_list' %}" class="btn btn-military">
+                        <i class="fas fa-tools"></i> View All Maintenance
+                    </a>
+                </div>
+            {% else %}
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle"></i> No maintenance alerts at this time.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Readiness status chart
+    const readinessCtx = document.getElementById('readinessChart').getContext('2d');
+    const readinessChart = new Chart(readinessCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Operational', 'Maintenance', 'Damaged', 'Decommissioned'],
+            datasets: [{
+                label: 'Equipment Status',
+                data: [
+                    {{ stats.operational_count|default:"0" }},
+                    {{ stats.maintenance_count|default:"0" }},
+                    {{ stats.damaged_count|default:"0" }},
+                    {{ stats.decommissioned_count|default:"0" }}
+                ],
+                backgroundColor: [
+                    'rgba(88, 166, 92, 0.8)',
+                    'rgba(255, 193, 7, 0.8)',
+                    'rgba(255, 107, 53, 0.8)',
+                    'rgba(220, 53, 69, 0.8)'
+                ],
+                borderColor: [
+                    'rgba(88, 166, 92, 1)',
+                    'rgba(255, 193, 7, 1)',
+                    'rgba(255, 107, 53, 1)',
+                    'rgba(220, 53, 69, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: '#E0E0E0'
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: '#E0E0E0'
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#E0E0E0'
+                    }
+                }
+            }
+        }
+    });
+    
+    // Category distribution chart
+    const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+    const categoryChart = new Chart(categoryCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [
+                'Weapons', 
+                'Vehicles', 
+                'Communications', 
+                'Protective Gear', 
+                'Medical', 
+                'Electronics'
+            ],
+            datasets: [{
+                data: [
+                    {{ stats.category_counts.weapons|default:"0" }},
+                    {{ stats.category_counts.vehicles|default:"0" }},
+                    {{ stats.category_counts.communications|default:"0" }},
+                    {{ stats.category_counts.protective_gear|default:"0" }},
+                    {{ stats.category_counts.medical|default:"0" }},
+                    {{ stats.category_counts.electronics|default:"0" }}
+                ],
+                backgroundColor: [
+                    'rgba(88, 166, 92, 0.8)',
+                    'rgba(33, 150, 243, 0.8)',
+                    'rgba(255, 193, 7, 0.8)',
+                    'rgba(156, 39, 176, 0.8)',
+                    'rgba(255, 107, 53, 0.8)',
+                    'rgba(3, 169, 244, 0.8)'
+                ],
+                borderColor: '#1E2527',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        color: '#E0E0E0'
+                    }
+                }
+            }
+        }
+    });
+    
+    // Classification distribution chart
+    const classificationCtx = document.getElementById('classificationChart').getContext('2d');
+    const classificationChart = new Chart(classificationCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Unclassified', 'Confidential', 'Secret'],
+            datasets: [{
+                data: [
+                    {{ stats.classification_counts.unclassified|default:"0" }},
+                    {{ stats.classification_counts.confidential|default:"0" }},
+                    {{ stats.classification_counts.secret|default:"0" }}
+                ],
+                backgroundColor: [
+                    'rgba(88, 166, 92, 0.8)',
+                    'rgba(255, 193, 7, 0.8)',
+                    'rgba(220, 53, 69, 0.8)'
+                ],
+                borderColor: '#1E2527',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        color: '#E0E0E0'
+                    }
+                }
+            }
+        }
+    });
+    
+    // Auto-update time
+    function updateTime() {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        document.getElementById('lastUpdated').textContent = `${hours}:${minutes}:${seconds}`;
+    }
+    
+    setInterval(updateTime, 1000);
+    
+    // Refresh button
+    document.getElementById('refreshBtn').addEventListener('click', function() {
+        window.location.reload();
+    });
+</script>
+{% endblock %}

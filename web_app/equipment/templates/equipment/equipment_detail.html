@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ equipment.name }} - Equipment Detail{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Back button and header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a href="{% url 'equipment:equipment_list' %}" class="btn btn-sm btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left"></i> Back to Roster
+            </a>
+            <h1 class="d-inline-block mb-0">
+                <i class="fas fa-clipboard-check"></i> Equipment Detail
+            </h1>
+        </div>
+        <div class="btn-group">
+            <a href="{% url 'equipment:equipment_update' equipment.id %}" class="btn btn-warning">
+                <i class="fas fa-edit"></i> Edit
+            </a>
+            <a href="{% url 'equipment:maintenance_add' equipment.id %}" class="btn btn-info">
+                <i class="fas fa-tools"></i> Log Maintenance
+            </a>
+            <a href="{% url 'equipment:equipment_assign' equipment.id %}" class="btn btn-primary">
+                <i class="fas fa-user-tag"></i> Assign
+            </a>
+            <a href="{% url 'equipment:equipment_delete' equipment.id %}" class="btn btn-danger">
+                <i class="fas fa-trash"></i> Decommission
+            </a>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Equipment details -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>{{ equipment.name }}</span>
+                    <div>
+                        {% if equipment.status == 'operational' %}
+                            <span class="badge badge-operational">OPERATIONAL</span>
+                        {% elif equipment.status == 'maintenance' %}
+                            <span class="badge badge-maintenance">MAINTENANCE</span>
+                        {% elif equipment.status == 'damaged' %}
+                            <span class="badge badge-damaged">DAMAGED</span>
+                        {% elif equipment.status == 'decommissioned' %}
+                            <span class="badge badge-decommissioned">DECOMMISSIONED</span>
+                        {% endif %}
+                        
+                        {% if equipment.classification_level == 'unclassified' %}
+                            <span class="badge bg-success ms-2">UNCLASSIFIED</span>
+                        {% elif equipment.classification_level == 'confidential' %}
+                            <span class="badge bg-warning text-dark ms-2">CONFIDENTIAL</span>
+                        {% elif equipment.classification_level == 'secret' %}
+                            <span class="badge bg-danger ms-2">SECRET</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="text-muted small">Equipment ID:</div>
+                            <div class="fw-bold">{{ equipment.id }}</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="text-muted small">Serial Number:</div>
+                            <div class="fw-bold"><code>{{ equipment.serial_number }}</code></div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="text-muted small">Category:</div>
+                            <div class="fw-bold text-uppercase">{{ equipment.category }}</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="text-muted small">Location:</div>
+                            <div class="fw-bold">{{ equipment.location }}</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="text-muted small">Assigned Unit:</div>
+                            <div class="fw-bold">{{ equipment.assigned_unit|default:"N/A" }}</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="text-muted small">Assigned Personnel:</div>
+                            <div class="fw-bold">{{ equipment.assigned_personnel|default:"N/A" }}</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="text-muted small">Condition Rating:</div>
+                            <div class="fw-bold">
+                                {% for i in "12345" %}
+                                    {% if forloop.counter <= equipment.condition_rating %}
+                                        <i class="fas fa-star text-warning"></i>
+                                    {% else %}
+                                        <i class="far fa-star text-muted"></i>
+                                    {% endif %}
+                                {% endfor %}
+                                ({{ equipment.condition_rating }}/5)
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="text-muted small">Purchase Date:</div>
+                            <div class="fw-bold">{{ equipment.purchase_date|default:"N/A" }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-12">
+                            <h5 class="border-bottom pb-2">Maintenance Schedule</h5>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="text-muted small">Last Maintenance:</div>
+                            <div class="fw-bold">{{ equipment.last_maintenance|default:"N/A" }}</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="text-muted small">Next Maintenance Due:</div>
+                            <div class="fw-bold">
+                                {% if equipment.next_maintenance_due %}
+                                    {{ equipment.next_maintenance_due }}
+                                    {% if equipment.days_overdue > 0 %}
+                                        <span class="badge bg-danger ms-2">{{ equipment.days_overdue }} DAYS OVERDUE</span>
+                                    {% else %}
+                                        <span class="badge bg-success ms-2">ON SCHEDULE</span>
+                                    {% endif %}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-12">
+                            <h5 class="border-bottom pb-2">Timestamps</h5>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="text-muted small">Created At:</div>
+                            <div class="fw-bold">{{ equipment.created_at }}</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="text-muted small">Last Updated:</div>
+                            <div class="fw-bold">{{ equipment.updated_at }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Maintenance logs -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Maintenance History</span>
+                    <a href="{% url 'equipment:maintenance_history' equipment.id %}" class="btn btn-sm btn-military">
+                        <i class="fas fa-history"></i> Full History
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    {% if maintenance_logs %}
+                        <div class="list-group list-group-flush">
+                            {% for log in maintenance_logs %}
+                                <div class="list-group-item bg-dark border-secondary">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="badge bg-info">{{ log.maintenance_type|upper }}</span>
+                                        <small class="text-muted">{{ log.maintenance_date }}</small>
+                                    </div>
+                                    <p class="mb-1">{{ log.description }}</p>
+                                    <small class="text-muted">Performed by: {{ log.performed_by }}</small>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="p-3 text-center">
+                            <i class="fas fa-tools fa-2x mb-2 text-muted"></i>
+                            <p class="mb-0">No maintenance records found</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
