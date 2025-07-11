@@ -154,16 +154,25 @@ military-equipment-inventory/
 └── README.md               # Project documentation
 ```
 
-### Extending the System
+### Future Kubernetes Deployment
 
-1. **Adding New Features**:
-   - Backend: Add new endpoints in the FastAPI `main.py` file
-   - Frontend: Create new templates and views in the Django `equipment` app
+While the system currently uses Docker Compose for local development, a Kubernetes deployment is planned for production environments to enhance scalability and resilience:
 
-2. **Database Changes**:
-   - Update models in `api_service/db/models.py`
-   - Generate migrations using Alembic: `alembic revision --autogenerate -m "description"`
-   - Apply migrations: `alembic upgrade head`
+1. **Kubernetes Resources**:
+   - Deployments for web app, API service, and database
+   - Services for internal communication
+   - Ingress for external access
+   - ConfigMaps and Secrets for configuration
+
+2. **Scaling Capabilities**:
+   - Horizontal Pod Autoscaling for the web app and API service
+   - Resource limits and requests for optimal cluster utilization
+   - StatefulSet for database with persistent volumes
+
+3. **CI/CD Integration**:
+   - Automated deployment pipeline with GitHub Actions
+   - Helm charts for package management
+   - Blue/Green deployment strategy for zero-downtime updates
 
 ## Troubleshooting
 
