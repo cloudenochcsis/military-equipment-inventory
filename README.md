@@ -2,7 +2,7 @@
 
 A comprehensive multi-container application for managing military equipment inventory, maintenance schedules, and unit assignments.
 
-![Military Equipment Inventory](https://www.transparenttextures.com/patterns/asfalt-dark.png)
+![Military Equipment Inventory](https://img.shields.io/badge/Military%20Equipment-Inventory%20System-darkgreen?style=for-the-badge&logo=database&logoColor=white)
 
 ## 📋 Overview
 
