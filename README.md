@@ -4,7 +4,7 @@ A comprehensive multi-container application for managing military equipment inve
 
 ![Military Equipment Inventory](https://img.shields.io/badge/Military%20Equipment-Inventory%20System-darkgreen?style=for-the-badge&logo=database&logoColor=white)
 
-## 📋 Overview
+## Overview
 
 The Military Equipment Inventory System is a robust platform designed for military organizations to efficiently track, manage, and maintain their equipment inventory. The system features a tactical-styled interface with military-grade security measures and comprehensive equipment management capabilities.
 
@@ -17,7 +17,7 @@ The Military Equipment Inventory System is a robust platform designed for milita
 - **Classification Handling**: Support for different security classification levels
 - **Readiness Reports**: Monitor equipment availability and operational status
 
-## 🏗️ Architecture
+## Architecture
 
 The system is built using a modern multi-container architecture:
 
@@ -34,7 +34,7 @@ The system is built using a modern multi-container architecture:
 - **Cache**: Redis
 - **Containerization**: Docker, Docker Compose
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -90,7 +90,7 @@ SECRET_KEY=your_secret_key_here
 ALLOWED_HOSTS=localhost,127.0.0.1
 ```
 
-## 🔧 Usage
+## Usage
 
 ### Equipment Management
 
@@ -111,7 +111,7 @@ ALLOWED_HOSTS=localhost,127.0.0.1
 - **Personnel Tracking**: Track which personnel are responsible for equipment
 - **Unit View**: View all equipment assigned to a particular unit
 
-## 🔄 API Endpoints
+## API Endpoints
 
 The system provides a comprehensive RESTful API:
 
@@ -125,14 +125,14 @@ The system provides a comprehensive RESTful API:
 - `GET /equipment/maintenance` - Get maintenance schedule and overdue items
 - `GET /equipment/unit/{unit_id}` - Get equipment by assigned unit
 
-## 🛡️ Security Features
+## Security Features
 
 - **Classification Levels**: Support for unclassified, confidential, and secret classifications
 - **Content Security Policy**: Protection against XSS and other web vulnerabilities
 - **Role-Based Access**: Different access levels based on user roles (future enhancement)
 - **Audit Logging**: Track all access and changes to sensitive equipment data
 
-## 🧰 Development
+## Development
 
 ### Project Structure
 
@@ -165,7 +165,7 @@ military-equipment-inventory/
    - Generate migrations using Alembic: `alembic revision --autogenerate -m "description"`
    - Apply migrations: `alembic upgrade head`
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -181,11 +181,11 @@ military-equipment-inventory/
    - Check API logs: `docker-compose logs api_service`
    - Verify API endpoints using Swagger UI: `http://localhost:8001/docs`
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
