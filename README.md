@@ -4,6 +4,16 @@ A comprehensive multi-container application for managing military equipment inve
 
 ![Military Equipment Inventory](https://img.shields.io/badge/Military%20Equipment-Inventory%20System-darkgreen?style=for-the-badge&logo=database&logoColor=white)
 
+## ⚠️ Important Disclaimer
+
+**This application is built for learning and demonstration purposes only, specifically to showcase container technologies and container orchestration concepts. It should NOT be used in production environments as it may contain security vulnerabilities and is not hardened for real-world deployment.**
+
+This project serves as an educational tool for understanding:
+- Multi-container application architecture
+- Docker and Docker Compose workflows
+- Container orchestration principles
+- Modern web application development patterns
+
 ## Overview
 
 The Military Equipment Inventory System is a robust platform designed for military organizations to efficiently track, manage, and maintain their equipment inventory. The system features a tactical-styled interface with military-grade security measures and comprehensive equipment management capabilities.
