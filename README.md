@@ -157,21 +157,6 @@ The system provides a comprehensive RESTful API:
 - `GET /equipment/maintenance` - Get maintenance schedule and overdue items
 - `GET /equipment/unit/{unit_id}` - Get equipment by assigned unit
 
-## Security Features
-
-- **Classification Levels**: Support for unclassified, confidential, and secret classifications
-- **Content Security Policy**: Protection against XSS and other web vulnerabilities
-- **Role-Based Access**: Different access levels based on user roles (future enhancement)
-- **Audit Logging**: Track all access and changes to sensitive equipment data
-
-### Intelligence Reports
-
-![Intel Report 1](images/Intel%20report_1.png)
-
-![Intel Reports 2](images/Intel_reports_2.png)
-
-The system generates comprehensive intelligence reports providing insights into equipment utilization, maintenance trends, and operational readiness across all units.
-
 ## Development
 
 ### Project Structure
