@@ -8,6 +8,13 @@ A comprehensive multi-container application for managing military equipment inve
 
 The Military Equipment Inventory System is a robust platform designed for military organizations to efficiently track, manage, and maintain their equipment inventory. The system features a tactical-styled interface with military-grade security measures and comprehensive equipment management capabilities.
 
+### Command Center Dashboard
+![Command Center Dashboard](images/command_center_1.png)
+
+The main command center provides a comprehensive overview of your equipment inventory with real-time status updates and operational readiness indicators.
+
+![Command Center Overview](images/command_centre_2.png)
+
 ### Key Features
 
 - **Command Dashboard**: Military-styled overview with operational readiness status
@@ -94,22 +101,37 @@ ALLOWED_HOSTS=localhost,127.0.0.1
 
 ### Equipment Management
 
+![Equipment Roster](images/equipment_roster.png)
+
 - **View Equipment**: Browse all equipment in the inventory from the Equipment Roster
 - **Add Equipment**: Add new equipment with details like name, category, status, etc.
 - **Edit Equipment**: Update equipment details, status, and assignments
 - **Decommission Equipment**: Mark equipment as decommissioned when no longer in service
 
+#### Equipment Details
+![Equipment Detail View](images/equipment_detail.png)
+
+Access detailed information for each piece of equipment including specifications, maintenance history, and current assignment status.
+
 ### Maintenance Operations
+
+![Maintenance Bay](images/maintenance_bay.png)
 
 - **Schedule Maintenance**: Set up regular maintenance schedules for equipment
 - **Log Maintenance**: Record maintenance activities with details and timestamps
 - **View History**: Access complete maintenance history for any equipment item
 
+The maintenance bay interface provides a comprehensive view of all maintenance activities, schedules, and equipment status updates.
+
 ### Unit Assignment
+
+![Unit Assignments](images/Unit_Assignments.png)
 
 - **Assign Equipment**: Assign equipment to specific military units
 - **Personnel Tracking**: Track which personnel are responsible for equipment
 - **Unit View**: View all equipment assigned to a particular unit
+
+The unit assignment interface allows for efficient tracking and management of equipment distribution across different military units and personnel.
 
 ## API Endpoints
 
@@ -131,6 +153,14 @@ The system provides a comprehensive RESTful API:
 - **Content Security Policy**: Protection against XSS and other web vulnerabilities
 - **Role-Based Access**: Different access levels based on user roles (future enhancement)
 - **Audit Logging**: Track all access and changes to sensitive equipment data
+
+### Intelligence Reports
+
+![Intel Report 1](images/Intel%20report_1.png)
+
+![Intel Reports 2](images/Intel_reports_2.png)
+
+The system generates comprehensive intelligence reports providing insights into equipment utilization, maintenance trends, and operational readiness across all units.
 
 ## Development
 
